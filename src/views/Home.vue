@@ -48,6 +48,27 @@
     <once @hook:updated="handleOnceUpdate" v-if="onceShow" />
     <button @click="onceShow = false">移除Once组件</button>
 
+    <hr>
+    <!--  loading  -->
+    <h2>Vue.extend 自定义全局组件</h2>
+    <button @click="handleShowLoading">loading</button>
+
+    <hr>
+    <!--  directive  -->
+    <div style="position: relative" v-loadingV2="loadingVisible">
+      <h2>自定义指令</h2>
+      <button @click="handleShowDirectiveLoading">directive loading</button>
+    </div>
+
+    <hr>
+    <!-- vm.$watch -->
+    <h2>命令式的 vm.$watch API 可随时监听，随时取消</h2>
+    <div>
+      <input v-model="watchForm.name" type="text">
+      <input v-model="watchForm.age" type="text">
+      <button :disabled="watchFormBtnDisable">保存</button>
+    </div>
+
   </div>
 </template>
 
@@ -87,7 +108,13 @@ export default {
         sales: Sales
       },
       roleComponent: null,
-      onceShow: true
+      onceShow: true,
+      loadingVisible: false,
+      watchForm: {
+        name: '',
+        age: ''
+      },
+      watchFormBtnDisable: true
     }
   },
   methods: {
@@ -105,6 +132,28 @@ export default {
     },
     handleOnceUpdate () {
       console.log('once component updated..')
+    },
+    handleShowLoading () {
+      const loading = this.$loading({ text: '正在加载。。。' })
+      // 三秒钟后关闭
+      const timer = setTimeout(() => {
+        loading.close()
+      }, 3000)
+
+      this.$on('hook:beforeDestroy', () => {
+        clearTimeout(timer)
+      })
+    },
+    handleShowDirectiveLoading () {
+      this.loadingVisible = true
+
+      const timer = setTimeout(() => {
+        this.loadingVisible = false
+      }, 2000)
+
+      this.$on('hook:beforeDestroy', () => {
+        clearTimeout(timer)
+      })
     }
   },
   created () {
@@ -115,6 +164,31 @@ export default {
   },
   beforeDestroy () {
     clearTimeout(this.timer)
+  },
+  mounted () {
+    // 模拟异步获取表单数据
+    const timer = setTimeout(() => {
+      this.watchForm = {
+        name: '小明',
+        age: 20
+      }
+
+      // 等表单数据回填之后，监听数据是否发生变化
+      this.$watch(
+        'watchForm',
+        () => {
+          console.log('数据发生了变化')
+          this.watchFormBtnDisable = false
+        },
+        {
+          deep: true
+        }
+      )
+      // unwatch()
+    }, 2000)
+    this.$once('hook:beforeDestroy', () => {
+      clearTimeout(timer)
+    })
   }
 }
 </script>
